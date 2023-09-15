@@ -2,9 +2,9 @@
 using HarmonyLib;
 using System;
 using System.IO;
-using System.Text;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 
 namespace ModdingAPI
 {
@@ -12,36 +12,27 @@ namespace ModdingAPI
     [BepInProcess("Blasphemous.exe")]
     internal class Main : BaseUnityPlugin
     {
-        public const string MOD_NAME = "Modding API"; // Change
+        public static ModLoader ModLoader { get; private set; }
+        public static ModdingAPI ModdingAPI { get; private set; }
+        
+        private static readonly Dictionary<string, BepInEx.Logging.ManualLogSource> loggers = new();
 
-        internal static ModdingAPI moddingAPI;
-        private static Dictionary<string, BepInEx.Logging.ManualLogSource> loggers;
-        internal static Main Instance { get; private set; }
+        private static Main _instance;
 
         private void Awake()
         {
-            moddingAPI = new ModdingAPI();
-            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(loadMissingAssemblies);
-            Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
-            harmony.PatchAll();
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(LoadMissingAssemblies);
+            _instance ??= this;
 
-            loggers = new Dictionary<string, BepInEx.Logging.ManualLogSource>();
-            AddLogger(MOD_NAME);
+            ModLoader = new ModLoader();
+            ModdingAPI = new ModdingAPI(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION);
 
-            if (Instance == null)
-                Instance = this;
+            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), MyPluginInfo.PLUGIN_GUID);
         }
 
-        private Assembly loadMissingAssemblies(object send, ResolveEventArgs args)
-        {
-            string assemblyPath = Path.GetFullPath($"Modding\\data\\{args.Name.Substring(0, args.Name.IndexOf(","))}.dll");
-            LogMessage(MOD_NAME, "Loading assembly from " + assemblyPath);
-            return File.Exists(assemblyPath) ? Assembly.LoadFrom(assemblyPath) : null;
-        }
+        private void Update() => ModLoader.Update();
 
-        private void Update() { moddingAPI.Update(); }
-
-        private void LateUpdate() { moddingAPI.LateUpdate(); }
+        private void LateUpdate() => ModLoader.LateUpdate();
 
         public static void AddLogger(string name)
         {
@@ -74,7 +65,7 @@ namespace ModdingAPI
         internal static void LogSpecial(string message)
         {
             // Create line text
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             int length = message.Length;
             while (length > 0)
             {
@@ -84,12 +75,19 @@ namespace ModdingAPI
             string line = sb.ToString();
 
             // Create final message
-            BepInEx.Logging.ManualLogSource logger = loggers[MOD_NAME];
+            BepInEx.Logging.ManualLogSource logger = loggers[MyPluginInfo.PLUGIN_NAME];
             logger.LogMessage("");
             logger.LogMessage(line);
             logger.LogMessage(message);
             logger.LogMessage(line);
             logger.LogMessage("");
+        }
+
+        private Assembly LoadMissingAssemblies(object send, ResolveEventArgs args)
+        {
+            string assemblyPath = Path.GetFullPath($"Modding\\data\\{args.Name.Substring(0, args.Name.IndexOf(","))}.dll");
+            LogMessage(MyPluginInfo.PLUGIN_NAME, "Loading missing assembly from " + assemblyPath);
+            return File.Exists(assemblyPath) ? Assembly.LoadFrom(assemblyPath) : null;
         }
     }
 }

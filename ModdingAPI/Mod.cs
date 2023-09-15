@@ -66,7 +66,7 @@ namespace ModdingAPI
             lastLevelLogged = "";
 
             // Register and patch this mod
-            Main.moddingAPI.registerMod(this);
+            Main.ModLoader.RegisterMod(this);
             Harmony harmony = new Harmony(ModId);
             harmony.PatchAll(GetType().Assembly);
         }
@@ -139,7 +139,7 @@ namespace ModdingAPI
         /// <param name="command">The new command to be added</param>
         protected void RegisterCommand(ModCommand command)
         {
-            Main.moddingAPI.registerCommand(command);
+            Main.ModLoader.RegisterCommand(command);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace ModdingAPI
         /// <param name="penitence">The new penitence to be added</param>
         protected void RegisterPenitence(ModPenitence penitence)
         {
-            Main.moddingAPI.registerPenitence(penitence);
+            Main.ModLoader.RegisterPenitence(penitence);
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace ModdingAPI
         /// <param name="item">The new item to be added</param>
         protected void RegisterItem(ModItem item)
         {
-            Main.moddingAPI.registerItem(item);
+            Main.ModLoader.RegisterItem(item);
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace ModdingAPI
         /// <returns>Whether or not the mod has been loaded</returns>
         protected bool IsModLoaded(string modId)
         {
-            foreach (Mod mod in Main.moddingAPI.GetMods())
+            foreach (Mod mod in Main.ModLoader.GetAllMods())
             {
                 if (mod.ModId == modId)
                     return true;
